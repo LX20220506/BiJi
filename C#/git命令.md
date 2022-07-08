@@ -618,3 +618,23 @@ $ git log
 $ git reset --hard [版本號]
 ~~~
 
+## 直接推送
+
+~~~git
+git remote add origin https://github.com/LX20220506/.Net_XueXi.git
+git branch -M main
+git push -u origin main
+~~~
+
+## 新建后推送
+
+~~~
+echo "# .Net_XueXi" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/LX20220506/.Net_XueXi.git
+git push -u origin main
+~~~
+
