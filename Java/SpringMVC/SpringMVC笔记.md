@@ -567,7 +567,7 @@ public String testPOJO(User user){
 
 > 注：
 >
-> SpringMVC中处理编码的过滤器一定要配置到其他过滤器之前，否则无效
+> <font size=4 color=blue><b>SpringMVC中处理编码的过滤器一定要配置到其他过滤器之前，否则无效</b></font>
 
 # 五、域对象共享数据
 
@@ -581,7 +581,7 @@ public String testServletAPI(HttpServletRequest request){
 }
 ```
 
-### 2、使用ModelAndView向request域对象共享数据
+### 2、使用<font size=4 color=blue><b>ModelAndView</b></font>向request域对象共享数据
 
 ```java
 @RequestMapping("/testModelAndView")
@@ -741,7 +741,7 @@ public String testRedirect(){
 >
 > 当SpringMVC中设置任何一个view-controller时，其他控制器中的请求映射将全部失效，此时需要在SpringMVC的核心配置文件中设置开启mvc注解驱动的标签：
 >
-> <mvc:annotation-driven />
+> <font size=4 color=blue><b><mvc:annotation-driven /></b></font>
 
 # 七、RESTful
 
@@ -1439,17 +1439,19 @@ SpringMVC中的拦截器需要实现HandlerInterceptor
 SpringMVC的拦截器必须在SpringMVC的配置文件中进行配置：
 
 ```xml
-<bean class="com.atguigu.interceptor.FirstInterceptor"></bean>
-<ref bean="firstInterceptor"></ref>
-<!-- 以上两种配置方式都是对DispatcherServlet所处理的所有的请求进行拦截 -->
-<mvc:interceptor>
-    <mvc:mapping path="/**"/>
-    <mvc:exclude-mapping path="/testRequestEntity"/>
+<mvc:interceptors>
+    <bean class="com.atguigu.interceptor.FirstInterceptor"></bean>
     <ref bean="firstInterceptor"></ref>
-</mvc:interceptor>
-<!-- 
-	以上配置方式可以通过ref或bean标签设置拦截器，通过mvc:mapping设置需要拦截的请求，通过mvc:exclude-mapping设置需要排除的请求，即不需要拦截的请求
--->
+    <!-- 以上两种配置方式都是对DispatcherServlet所处理的所有的请求进行拦截 -->
+    <mvc:interceptor>
+        <mvc:mapping path="/**"/>
+        <mvc:exclude-mapping path="/testRequestEntity"/>
+        <ref bean="firstInterceptor"></ref>
+    </mvc:interceptor>
+    <!-- 
+        以上配置方式可以通过ref或bean标签设置拦截器，通过mvc:mapping设置需要拦截的请求，通过mvc:exclude-mapping设置需要排除的请求，即不需要拦截的请求
+    -->
+</mvc:interceptors>
 ```
 
 ### 2、拦截器的三个抽象方法

@@ -621,7 +621,7 @@ $ git reset --hard [版本號]
 ## 直接推送
 
 ~~~git
-git remote add origin https://github.com/LX20220506/.Net_XueXi.git
+git remote add origin https://github.com/LX20220506/Java_XueXi.git
 git branch -M main
 git push -u origin main
 ~~~
