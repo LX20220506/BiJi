@@ -34,6 +34,7 @@
 ## 创建maven工程
 - 打包方式：jar
 - 引入依赖
+
 	```xml
 	<dependencies>
 		<!-- Mybatis核心 -->
@@ -318,6 +319,7 @@ properties、settings、typeAliases、typeHandlers、objectFactory、objectWrapp
 	</select>
 	```
 - 注意：
+
 	1. 查询的标签select必须设置属性resultType或resultMap，用于设置实体类和数据库表的映射关系  
 		- resultType：自动映射，用于属性名和表中字段名一致的情况  
 		- resultMap：自定义映射，用于一对多或多对一或字段名和属性名不一致的情况  
@@ -342,6 +344,7 @@ properties、settings、typeAliases、typeHandlers、objectFactory、objectWrapp
 ```
 ## 多个字面量类型的参数
 - 若mapper接口中的方法参数为多个时，此时MyBatis会自动将这些参数放在一个map集合中
+
 	1. 以arg0,arg1...为键，以参数为值；
 	2. 以param1,param2...为键，以参数为值；
 - 因此只需要通过\${}和#{}访问map集合的键就可以获取相对应的值，注意${}需要手动加单引号。
@@ -400,6 +403,7 @@ public void insertUser() {
 ```
 ## 使用@Param标识参数
 - 可以通过@Param注解标识mapper接口中的方法参数，此时，会将这些参数放在map集合中 
+
 	1. 以@Param注解的value属性值为键，以参数为值；
 	2. 以param1,param2...为键，以参数为值；
 - 只需要通过\${}和#{}访问map集合的键就可以获取相对应的值，注意${}需要手动加单引号
@@ -419,6 +423,7 @@ public void checkLoginByParam() {
 ```
 ## 总结
 - 建议分成两种情况进行处理
+
 	1. 实体类类型的参数
 	2. 使用@Param标识参数
 # MyBatis的各种查询功能
@@ -665,6 +670,7 @@ public void insertUser() {
 </select>
 ```
 - 若字段名和实体类中的属性名不一致，但是字段名符合数据库的规则（使用_），实体类中的属性名符合Java的规则（使用驼峰）。此时也可通过以下两种方式处理字段名和实体类中的属性的映射关系  
+
 	1. 可以通过为字段起别名的方式，保证和实体类中的属性名保持一致  
 		```xml
 		<!--List<Emp> getAllEmp();-->
@@ -674,9 +680,9 @@ public void insertUser() {
 		```
 	2. 可以在MyBatis的核心配置文件中的`setting`标签中，设置一个全局配置信息mapUnderscoreToCamelCase，可以在查询表中数据时，自动将_类型的字段名转换为驼峰，例如：字段名user_name，设置了mapUnderscoreToCamelCase，此时字段名就会转换为userName。[核心配置文件详解](#核心配置文件详解)
 		```xml
-      <settings>
-        <setting name="mapUnderscoreToCamelCase" value="true"/>
-      </settings>
+	    <settings>
+	    <setting name="mapUnderscoreToCamelCase" value="true"/>
+	    </settings>
 		```
 ## 多对一映射处理
 >查询员工信息以及员工所对应的部门信息
@@ -890,6 +896,7 @@ public void getEmpAndDeptByStepOne() {
 ```
 - 开启后，需要用到查询dept的时候才会调用相应的SQL语句![](Resources/延迟加载测试3.png)
 - fetchType：当开启了全局的延迟加载之后，可以通过该属性手动控制延迟加载的效果，fetchType="lazy(延迟加载)|eager(立即加载)"
+
 	```xml
 	<resultMap id="empAndDeptByStepResultMap" type="Emp">
 		<id property="eid" column="eid"></id>
@@ -955,15 +962,17 @@ public void getEmpAndDeptByStepOne() {
 </select>
 ```
 - 注意：where标签不能去掉条件后多余的and/or
-	```xml
-	<!--这种用法是错误的，只能去掉条件前面的and/or，条件后面的不行-->
-	<if test="empName != null and empName !=''">
-	emp_name = #{empName} and
-	</if>
-	<if test="age != null and age !=''">
-		age = #{age}
-	</if>
-	```
+
+```xml
+xml
+<!--这种用法是错误的，只能去掉条件前面的and/or，条件后面的不行-->
+<if test="empName != null and empName !=''">
+emp_name = #{empName} and
+</if>
+<if test="age != null and age !=''">
+	age = #{age}
+</if>
+```
 ## trim
 - trim用于去掉或添加标签中的内容  
 - 常用属性
@@ -1049,6 +1058,7 @@ public void getEmpByChoose() {
 	- open：设置foreach标签中的内容的开始符  
 	- close：设置foreach标签中的内容的结束符
 - 批量删除
+
 	```xml
 	<!--int deleteMoreByArray(Integer[] eids);-->
 	<delete id="deleteMoreByArray">
@@ -1069,6 +1079,7 @@ public void getEmpByChoose() {
 	```
 	![](Resources/foreach测试结果1.png)
 - 批量添加
+
 	```xml
 	<!--int insertMoreByList(@Param("emps") List<Emp> emps);-->
 	<insert id="insertMoreByList">
@@ -1109,6 +1120,7 @@ public void getEmpByChoose() {
 ## MyBatis的一级缓存
 - 一级缓存是SqlSession级别的，通过同一个SqlSession查询的数据会被缓存，下次查询相同的数据，就会从缓存中直接获取，不会从数据库重新访问  
 - 使一级缓存失效的四种情况：  
+
 	1. 不同的SqlSession对应不同的一级缓存  
 	2. 同一个SqlSession但是查询条件不同
 	3. 同一个SqlSession两次查询期间执行了任何一次增删改操作
@@ -1116,10 +1128,11 @@ public void getEmpByChoose() {
 ## MyBatis的二级缓存
 - 二级缓存是SqlSessionFactory级别，通过同一个SqlSessionFactory创建的SqlSession查询的结果会被缓存；此后若再次执行相同的查询语句，结果就会从缓存中获取  
 - 二级缓存开启的条件
+
 	1. 在核心配置文件中，设置全局配置属性cacheEnabled="true"，默认为true，不需要设置
 	2. 在映射文件中设置标签<cache />
 	3. 二级缓存必须在SqlSession关闭或提交之后有效
-	4. 查询的数据所转换的实体类类型必须实现序列化的接口
+	4. 查询的数据所转换的实体类类型必须实现序列化的接口(Serializable)
 - 使二级缓存失效的情况：两次查询之间执行了任意的增删改，会使一级和二级缓存同时失效
 ## 二级缓存的相关配置
 - 在mapper配置文件中添加的cache标签可以设置一些属性
@@ -1337,33 +1350,42 @@ public void getEmpByChoose() {
     MyBatis3Simple: 生成基本的CRUD（清新简洁版）
     MyBatis3: 生成带条件的CRUD（奢华尊享版）
     -->
-    <context id="DB2Tables" targetRuntime="MyBatis3Simple">
+    <context id="DB2Tables" targetRuntime="MyBatis3">
+
+        <!-- 注释构建 -->
+        <commentGenerator>
+            <!-- 去掉所有的注释 -->
+            <property name="suppressAllComments" value="true"/>
+            <property name="suppressDate" value="true"/>
+        </commentGenerator>
+
         <!-- 数据库的连接信息 -->
         <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
-                        connectionURL="jdbc:mysql://localhost:3306/mybatis"
+                        connectionURL="jdbc:mysql://localhost:3306/ssmdb"
                         userId="root"
                         password="123456">
+            <!--处理生成其他数据库的同名称的表-->
+            <property name="nullCatalogMeansCurrent" value="true"/>
         </jdbcConnection>
         <!-- javaBean的生成策略-->
-        <javaModelGenerator targetPackage="com.atguigu.mybatis.pojo" targetProject=".\src\main\java">
+        <javaModelGenerator targetPackage="com.ssm.entity" targetProject=".\src\main\java">
             <property name="enableSubPackages" value="true" />
             <property name="trimStrings" value="true" />
         </javaModelGenerator>
         <!-- SQL映射文件的生成策略 -->
-        <sqlMapGenerator targetPackage="com.atguigu.mybatis.mapper"
+        <sqlMapGenerator targetPackage="com.ssm.mapper"
                          targetProject=".\src\main\resources">
             <property name="enableSubPackages" value="true" />
         </sqlMapGenerator>
         <!-- Mapper接口的生成策略 -->
         <javaClientGenerator type="XMLMAPPER"
-                             targetPackage="com.atguigu.mybatis.mapper" targetProject=".\src\main\java">
+                             targetPackage="com.ssm.mapper" targetProject=".\src\main\java">
             <property name="enableSubPackages" value="true" />
         </javaClientGenerator>
         <!-- 逆向分析的表 -->
         <!-- tableName设置为*号，可以对应所有表，此时不写domainObjectName -->
         <!-- domainObjectName属性指定生成出来的实体类的类名 -->
         <table tableName="t_emp" domainObjectName="Emp"/>
-        <table tableName="t_dept" domainObjectName="Dept"/>
     </context>
 </generatorConfiguration>
 ```
@@ -1463,6 +1485,7 @@ public void testPageHelper() throws IOException {
 }
 ```
 - 分页相关数据：
+
 	```
 	Page{count=true, pageNum=1, pageSize=4, startRow=0, endRow=4, total=8, pages=2, reasonable=false, pageSizeZero=false}[Emp{eid=1, empName='admin', age=22, sex='男', email='456@qq.com', did=3}, Emp{eid=2, empName='admin2', age=22, sex='男', email='456@qq.com', did=3}, Emp{eid=3, empName='王五', age=12, sex='女', email='123@qq.com', did=3}, Emp{eid=4, empName='赵六', age=32, sex='男', email='123@qq.com', did=1}]
 	```
@@ -1485,6 +1508,7 @@ public void testPageHelper() throws IOException {
 }
 ```
 - 分页相关数据：
+
 	```
 	PageInfo{
 	pageNum=1, pageSize=4, size=4, startRow=1, endRow=4, total=8, pages=2, 
