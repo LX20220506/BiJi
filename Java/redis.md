@@ -93,7 +93,48 @@
 
     `redis-cli shutdown`
 
-##  3.Redis键(key)操作 
+##  3.Redis命令行操作
+
+### Redis命令的小套路
+
+- NX：not exist
+
+- EX：expire
+
+- M：multi
+
+  
+
+### 基本操作
+
+### 切换数据库
+
+~~~
+Redis默认有16个数据库。
+	115 # Set the number of databases. The default database is DB 0, you can select
+	116 # a different one on a per-connection basis using SELECT <dbid> where
+	117 # dbid is a number between 0 and 'databases'-1
+	118 databases 16
+	使用select进行切换，数据库索引从0开始
+	127.0.0.1:6379> select 2
+	OK
+	127.0.0.1:6379[2]> select 0
+	OK
+	127.0.0.1:6379> 
+~~~
+
+### 查看数据库长度
+
+数据库长度就是这个数据库中存储了多少条数据
+
+~~~bash
+	127.0.0.1:6379> dbsize
+	(integer) 3
+~~~
+
+
+
+### Redis键(key)操作 
 
 ​			`set k1 a --->key:k1 ; value:a`
 
@@ -115,27 +156,522 @@ redis到底有几种数据类型[传送查看](https://www.163.com/dy/article/G5
 Redis命令手册，可自行下载
 链接: https://pan.baidu.com/s/1KAabPz-WI7YurbmTEpusVw 提取码: m6xt 
 
- 4.1 String 
+###  4.1 String 
 
- 4.2 Hash 
+> Redis中最基本的类型，它是key对应的一个单一值。二进制安全，不必担心由于编码等问题导致二进制数据变化。所以redis的string可以包含任何数据，比如jpg图片或者序列化的对象。Redis中一个字符串值的最大容量是512M。
 
- 4.3 List 
+~~~redis
+●SET KEY VALUE [EX SECONDS] [PX MILLISECONDS] [NX|XX]
+	给KEY设置一个string类型的值。
+	EX参数用于设置存活的秒数。
+	PX参数用于设置存活的毫秒数。
+	NX参数表示当前命令中指定的KEY不存在才行。
+	XX参数表示当前命令中指定的KEY存在才行。
+●GET KEY
+	根据key得到值，只能用于string类型。
+●APPEND KEY VALUE
+	把指定的value追加到KEY对应的原来的值后面，返回值是追加后字符串长度
+●STRLEN KEY
+	直接返回字符串长度
+●INCR KEY
+	自增1（要求：参与运算的数据必须是整数且不能超过整数Integer范围）
+●DECR KEY
+	自减1（要求：参与运算的数据必须是整数且不能超过整数Integer范围）
+●INCRBY KEY INCREMENT
+	原值+INCREMENT（要求：参与运算的数据必须是整数且不能超过整数Integer范围）
+●DECRBY KEY DECREMENT
+	原值-DECREMENT（要求：参与运算的数据必须是整数且不能超过整数Integer范围）
+●GETRANGE KEY START END
+	从字符串中取指定的一段，索引从0开始
+	START是开始取值的索引
+	END是结束取值的索引
+●SETRANGE KEY OFFSET VALUE
+	从offset（从0开始的索引）开始使用VALUE进行替换
+	包含offset位置
+●SETEX KEY SECONDS VALUE
+	设置KEY,VALUE时指定存在秒数
+●SETNX KEY VALUE
+	新建字符串类型的键值对
+●MSET KEY VALUE [KEY VALUE ...]
+	一次性设置一组多个键值对
+●MGET KEY [KEY ...]
+	一次性指定多个KEY，返回它们对应的值，没有值的KEY返回值是(nil)
+●MSETNX KEY VALUE [KEY VALUE ...]
+	一次性新建多个值
+●GETSET KEY VALUE
+	设置新值，同时能够将旧值返回
+~~~
 
- 4.4 Set 
 
- 4.5 Sorted Set 
 
- 4.6 高级功能类型 
+###  4.2 Hash （Map<string,object>）
 
- 4.6.1 Bitmaps 
+本身就是一个键值对集合。可以当做Java中的Map<String,String>对待。每一个hash可以存储2^32-1个键值对。
 
- 4.6.2 Geospatial 
+![p05](data:image/png;base64,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)
 
- 4.6.3 HyperLogLog  
+~~~
+●HSET key field value
+	插入新数据返回1
+	修改旧数据返回0
+●HGETALL key
+●HGET key field
+●HLEN key
+●HKEYS key
+●HVALS key
+●HEXISTS key field
+●HDEL key field [field ...]
+●HINCRBY key field increment
+●HMGET key field [field ...]
+●HMSET key field value [field value ...]
+●HSETNX key field value
+	要求field是新建的
+~~~
 
-##  5.Redis事务 
 
-[传送查看](https://zhuanlan.zhihu.com/p/146865185)
+
+
+
+###  4.3 List （值在键在，值光键亡）
+
+> Redis 列表是简单的字符串列表，按照插入顺序排序。你可以添加一个元素到列表的头部（左边）或者尾部（右边）。它的底层是双向链表，所以它操作时头尾效率高，中间效率低（额外花费查找插入位置的时间）。
+>
+> 在Redis中list类型是按照插入顺序排序的字符串链表。和数据结构中的普通链表一样，我们可以在其头部(left)和尾部(right)添加新的元素。在插入时，如果该键并不存在，Redis将为该键创建一个新的链表。与此相反，如果链表中所有的元素均被移除，那么该键也将会被从数据库中删除。List中可以包含的最大元素数量是2^32-1个。
+>
+> list是一个有序可以重复的数据类型。
+
+![p01](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/p01.e932268e.png)
+
+
+
+~~~
+●LPUSH key value [value ...]
+	针对key指定的list，从左边放入元素
+●RPUSH key value [value ...]
+	针对key指定的list，从右边放入元素
+●LRANGE key start stop
+	根据list集合的索引打印元素数据
+	正着数：0,1,2,3,...
+	倒着数：-1,-2,-3,...
+●LLEN key
+	返回list集合的长度
+●LPOP key
+	从左边弹出一个元素。
+	弹出=返回+删除。
+●RPOP key
+	从右边弹出一个元素。
+●RPOPLPUSH source destination
+	从source中RPOP一个元素，LPUSH到destination中
+●LINDEX key index
+	根据索引从集合中取值
+●LINSERT key BEFORE|AFTER pivot value
+	在pivot指定的值前面或后面插入value
+	如果pivot值有重复的，那么就从左往右数，以第一个遇到的pivot为基准
+	BEFORE表示放在pivot前面
+	AFTER表示放在pivot后面
+●LPUSHX key value
+	只能针对存在的list执行LPUSH
+●LREM key count value
+	根据count指定的数量从key对应的list中删除value
+	具体执行时从左往右删除，遇到一个删一个，删完为止
+●LSET key index value
+	把指定索引位置的元素替换为另一个值
+●LTRIM key start stop
+	仅保留指定区间的数据，两边的数据被删除
+~~~
+
+
+
+
+
+### 4.4 Set 
+
+Redis的set是string类型的无序集合。它是基于哈希表实现的。set类型插入数据时会自动去重。最大可以包含2^32-1个元素。
+
+![p05](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/p06.92cc4890.png)
+
+~~~
+●SADD key member [member ...]
+	给key指定的set集合中存入数据，set会自动去重
+●SMEMBERS key
+	返回可以指定的set集合中所有的元素
+●SCARD key
+	返回集合中元素的数量
+●SISMEMBER key member
+	检查当前指定member是否是集合中的元素
+	返回1：表示是集合中的元素
+	返回0：表示不是集合中的元素
+●SREM key member [member ...]
+	从集合中删除元素
+●SINTER key [key ...]
+	将指定的集合进行“交集”操作
+	集合A：a,b,c
+	集合B：b,c,d
+	交集：b,c
+●SINTERSTORE destination key [key ...]
+	取交集后存入destination
+●SDIFF key [key ...]
+	将指定的集合执行“差集”操作
+	集合A：a,b,c
+	集合B：b,c,d
+	A对B执行diff：a
+	相当于：A-交集部分
+●SDIFFSTORE destination key [key ...]
+●SUNION key [key ...]
+	将指定的集合执行“并集”操作
+	集合A：a,b,c
+	集合B：b,c,d
+	并集：a,b,c,d
+●SUNIONSTORE destination key [key ...]
+●SMOVE source destination member
+	把member从source移动到destination
+
+【测试数据
+SADD set:lot a b c d e f g h i j k l m n o p q r s t u v w x y z aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu vv ww xx yy zz
+】
+
+●SSCAN key cursor [MATCH pattern] [COUNT count]
+	基于游标的遍历。cursor是游标值，第一次显示第一块内容时，游标取值为0；根据后续返回的新的游标值获取下一块数据。直到游标值变成0，说明数据遍历完成。
+●SRANDMEMBER key [count]
+	从集合中随机返回count个数量的元素，count不指定就返回1个（数据有可能重复出现）
+●SPOP key [count]
+	从集合中随机弹出count个数量的元素，count不指定就弹出1个（保证不会有重复数据出现）
+~~~
+
+
+
+
+
+###  4.5 zset 
+
+> Redis zset 和 set 一样也是string类型元素的集合,且不允许重复的成员。不同的是每个元素都会关联一个double类型的分数。redis正是通过分数来为集合中的成员进行从小到大的排序。zset的成员是唯一的,但分数(score)却可以重复。
+
+![p05](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/p07.d66bbc50.png)
+
+~~~
+●ZADD key [NX|XX] [CH] [INCR] score member [score member ...]
+●ZRANGE key start stop [WITHSCORES]
+●ZCARD key
+●ZSCORE key member
+●ZINCRBY key increment member
+●ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]
+	在分数的指定区间内返回数据
+	min参数可以通过 -inf 表示负无穷
+	max参数可以通过 +inf 表示正无穷
+
+	默认是闭区间
+	可以通过 (min (max 形式指定开区间，例如：(50 (80
+●ZRANK key member
+	先对分数进行升序排序，返回member的排名。排名从0开始
+●ZREM key member [member ...]
+~~~
+
+
+
+
+
+###  4.6 高级功能类型 
+
+####  4.6.1 Bitmaps 
+
+> 直接对string的二进制位进行操作的一组命令
+
+#####  ①基数概念
+
+一个集合中不重复元素的个数。例如：集合{1,2,5,1,7,2,5}中元素个数是7，但是基数是4。而hyperloglogs的主要功能就是进行基数统计。
+
+##### ②hyperloglogs命令
+
+###### [1]添加
+
+```text
+192.168.109.100:6379> PFADD user:access:1 tom jerry andy jim andy jerry tom
+(integer) 1
+192.168.109.100:6379> PFADD user:access:2 andy jerry tom bob kate
+(integer) 1
+192.168.109.100:6379> PFADD user:access:3 mary harry tom jerry
+(integer) 1
+```
+
+
+
+###### [2]统计
+
+```text
+192.168.109.100:6379> PFCOUNT user:access:1 user:access:2 user:access:3
+(integer) 8
+```
+
+
+
+###### [3]合并
+
+```text
+192.168.109.100:6379> PFMERGE user:access:merge user:access:1 user:access:2 user:access:3
+OK
+192.168.109.100:6379> PFCOUNT user:access:merge
+(integer) 8
+```
+
+
+
+#### 4.6.2 Geospatial 
+
+> Redis 在 3.2 推出 Geo 类型，该功能可以推算出地理位置信息，两地之间的距离。
+
+ ![./images](http://heavy_code_industry.gitee.io/code_heavy_industry/assets/img/p08.3d665235.png)
+
+查询经纬度数据：http://www.jsons.cn/lngcode
+
+##### ①添加地理位置
+
+```text
+GEOADD key longitude latitude member [longitude latitude member ...]
+```
+
+
+
+> 规则：
+>
+> 1.两极无法直接添加，一般会下载城市数据，直接通过 Java 程序一次性导入。
+>
+> 2.取值范围
+>
+>  有效的经度从 -180 度到 180 度。
+>
+>  有效的纬度从 -85.05112878 度到 85.05112878 度。
+>
+>  当坐标位置超出指定范围时，该命令将会返回一个错误。
+>
+> 3.已经添加的数据，是无法再次往里面添加的。
+
+```html
+192.168.109.100:6379> GEOADD "china:city" 114.085947 22.547 shenzhen
+(integer) 1
+192.168.109.100:6379> GEOADD "china:city" 113.280637 23.125178 guangzhou
+(integer) 1
+```
+
+
+
+##### ②查询已添加的地理位置
+
+Geo类型在Redis内部其实是使用zset类型存储的，所以可以使用zset的命令进行常规操作。
+
+```text
+192.168.109.100:6379> ZRANGE china:city 0 -1 
+1) "shenzhen"
+2) "guangzhou"
+192.168.109.100:6379> ZRANGE china:city 0 -1 WITHSCORES
+1) "shenzhen"
+2) "4046433733682118"
+3) "guangzhou"
+4) "4046533764066819"
+```
+
+
+
+##### ③删除已添加的地理位置
+
+```text
+192.168.109.100:6379> ZREM china:city guangzhou
+(integer) 1
+```
+
+
+
+##### ④获取指定地区的坐标值
+
+```text
+192.168.109.100:6379> GEOPOS china:city shenzhen
+1) 1) "114.08594459295272827"
+   2) "22.54699993773966327"
+```
+
+
+
+##### ⑤计算两地之间的直线距离
+
+```text
+192.168.109.100:6379> GEODIST china:city guangzhou shenzhen km
+"104.6426"
+```
+
+
+
+> 单位：
+>
+> m 表示单位为米[默认值]。
+>
+> km 表示单位为千米。
+>
+> mi 表示单位为英里。
+>
+> ft 表示单位为英尺。
+>
+> 如果用户没有显式地指定单位参数， 那么 GEODIST 默认使用米作为单位。
+
+
+
+##### ⑥以给定坐标为中心，在指定半径内查找元素
+
+```text
+192.168.109.100:6379> GEORADIUS china:city 110 20 1000 km WITHCOORD WITHDIST
+1) 1) "shenzhen"
+   2) "509.4622"
+   3) 1) "114.08594459295272827"
+      2) "22.54699993773966327"
+2) 1) "guangzhou"
+   2) "485.7406"
+   3) 1) "113.28063815832138062"
+      2) "23.12517743834835215"
+```
+
+WITHCOORD表示显示经纬度
+
+WITHDIST表示显示到中心的距离
+
+
+
+##### ⑦在指定元素周围查找其他元素
+
+```text
+192.168.109.100:6379> GEORADIUSBYMEMBER china:city shenzhen 300 km WITHCOORD WITHDIST
+1) 1) "shenzhen"
+   2) "0.0000"
+   3) 1) "114.08594459295272827"
+      2) "22.54699993773966327"
+2) 1) "guangzhou"
+   2) "104.6426"
+   3) 1) "113.28063815832138062"
+      2) "23.12517743834835215"
+```
+
+
+
+
+
+#### 4.6.3 HyperLogLog  
+
+> 用于大数据量基数统计，速度非常快，占用内存非常小。每个HyperLogLog键只需要花费12KB内存，就可以计算接近 2^64个不同元素的基数。比如计算网站UV（User view，用户访问数量，一个用户一天访问同一个URL地址多次合并为一次）。
+
+直接对数据的二进制位进行操作
+
+```text
+192.168.109.100:6379[5]> set a hello
+OK
+192.168.109.100:6379[5]> GETBIT a 0
+(integer) 0
+192.168.109.100:6379[5]> GETBIT a 1
+(integer) 1
+192.168.109.100:6379[5]> GETBIT a 2
+(integer) 1
+192.168.109.100:6379[5]> GETBIT a 3
+(integer) 0
+192.168.109.100:6379[5]> GETBIT a 4
+(integer) 1
+192.168.109.100:6379[5]> GETBIT a 5
+(integer) 0
+192.168.109.100:6379[5]> SETBIT a 5 1
+(integer) 0
+192.168.109.100:6379[5]> get a
+"lello"
+192.168.109.100:6379[5]> BITCOUNT a
+(integer) 22
+```
+
+setbit设置指定比特位
+getbit获取指定比特位
+bitcount统计所有比特位中1的数量
+
+
+
+### 4.7常用数据类型应用场景
+
+| 数据类型     | 应用场景                                                |
+| ------------ | ------------------------------------------------------- |
+| string       | 分布式Session存储 分布式数据库ID 计数器：统计网站访问量 |
+| hash         | 存储对象信息（购物车中的商品信息） 存储表的信息         |
+| list         | 实现队列、栈操作 汇总日志 粉丝列表 关注的人列表         |
+| set          | 签到 打卡 点赞                                          |
+| zset         | 排行榜 百度热点搜索                                     |
+| geospatial   | 获取地理位置信息 两地之间的距离                         |
+| hyperloglogs | 基数统计                                                |
+| bitmaps      | 统计用户访问次数                                        |
+
+## 5.Redis配置
+
+
+
+##  5.Redis事务和锁机制
+
+***Redis*** 事务是一个单独的隔离操作：事务中的所有命令都会序列化、按顺序地执行。事务在执行的过程中，不会被其他客户端发送来的命令请求所打断。
+
+***Redis*** 事务的主要作用就是串联多个命令防止别的命令插队。
+
+### *Multi*、*Exec*、*Discard*
+
+[![img](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241242519.png)](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241242519.png)
+
+> ***Multi***
+>
+> ***Exec***
+>
+> ***Discard***
+>
+> 从输入 ***Multi*** 命令开始，输入的命令都会依次进入命令队列中，但不会执行，直到输入 ***Exec*** 后，***Redis*** 会将之前的命令队列中的命令依次执行。
+>
+> 组队的过程中可以通过 ***Discard*** 来放弃组队。
+
+- 组队成功，提交成功
+
+  ![img](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241243427.png)
+
+- 放弃组队
+
+  ![img](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241243951.png)
+
+- 组队中有命令错误，不会执行
+
+  ![img](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241244858.png)
+
+- 组队中不报错，执行时报错
+
+  ![img](https://tsuiraku.oss-cn-chengdu.aliyuncs.com/typora/202206241244271.png)
+
+当组队中某个命令出现了报告错误，执行时整个的所有队列都会被取消。
+
+### 悲观锁
+
+悲观锁（***Pessimistic Lock***），即每次去拿数据的时候都认为有其他线程会修改，所以每次在拿数据的时候都会上锁，这样其他线程想要拿到这个数据就会被 ***block*** 直到成功拿到锁。（效率低）
+
+### 乐观锁
+
+乐观锁（***Optimistic Lock***），即每次去拿数据的时候都认为其他线程不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间有没有其他线程去更新这个数据，可以使用版本号等机制。
+
+**乐观锁适用于多读的应用类型，这样可以提高吞吐量**。
+
+***Redis*** 就是利用这种 ***check-and-set*** 机制实现事务的。
+
+### *Watch、unwatch*
+
+在执行 ***multi*** 之前，先执行 **watch key1 [key2]，可以监视一个（或多个 ）key**。如果在事务执行之前这个 *key*** 被其他命令所改动，那么事务将被打断。
+
+取消 ***WATCH*** 命令对所有 ***key*** 的监视。如果在执行 ***WATCH*** 命令之后，***EXEC*** 命令或 ***DISCARD*** 命令先被执行，那么就不需要再执行 ***UNWATCH*** 。
+
+### 事务三特性
+
+- 单独的隔离操作
+
+  事务中的所有命令都会序列化、按顺序地执行。事务在执行的过程中，不会被其他客户端发送来的命令请求所打断。
+
+- 没有隔离级别的概念
+
+  队列中的命令没有提交之前都不会实际被执行，因为事务提交前任何指令都不会被实际执行。
+
+- 不保证原子性
+
+  事务中如果有一条命令执行失败，其后的命令仍然会被执行，没有回滚 
 
 ##  6.Redis持久化 
 
@@ -1055,7 +1591,251 @@ testLock();
 
 <hr/>
 
-##  10 Redsi6.0新功能 
+## 10 Jedis操作Redis
+
+即 ***Java*** 操作 ***Redis***。
+
+1. 依赖
+
+```xml
+<dependency>
+  <groupId>redis.clients</groupId>
+  <artifactId>jedis</artifactId>
+  <version>3.2.0</version>
+</dependency>
+```
+
+1. 连接 ***Redis***
+
+```java
+public class JedisDemo {
+  public static void main(String[] args) {
+    Jedis jedis = new Jedis("192.168.57.101", 6379);
+    String pong = jedis.ping();
+    System.out.println("连接成功：" + pong);
+    jedis.close();
+  }
+}
+```
+
+> ***Key***
+>
+> ```java
+> jedis.set("k1", "v1");
+> jedis.set("k2", "v2");
+> jedis.set("k3", "v3");
+> Set<String> keys = jedis.keys("*");
+> System.out.println(keys.size());
+> for (String key : keys) {
+> System.out.println(key);
+> }
+> System.out.println(jedis.exists("k1"));
+> System.out.println(jedis.ttl("k1"));                
+> System.out.println(jedis.get("k1"));
+> Copy
+> ```
+>
+> ***String***
+>
+> ```java
+> jedis.mset("str1","v1","str2","v2","str3","v3");
+> System.out.println(jedis.mget("str1","str2","str3"));
+> Copy
+> ```
+>
+> ***List***
+>
+> ```java
+> List<String> list = jedis.lrange("mylist",0,-1);
+> for (String element : list) {
+> System.out.println(element);
+> }
+> Copy
+> ```
+>
+> ***Set***
+>
+> ```java
+> jedis.sadd("orders", "order01");
+> jedis.sadd("orders", "order02");
+> jedis.sadd("orders", "order03");
+> jedis.sadd("orders", "order04");
+> Set<String> smembers = jedis.smembers("orders");
+> for (String order : smembers) {
+> System.out.println(order);
+> }
+> jedis.srem("orders", "order02");
+> ```
+>
+> ***Hash***
+>
+> ```java
+> jedis.hset("hash1","userName","lisi");
+> System.out.println(jedis.hget("hash1","userName"));
+> Map<String,String> map = new HashMap<String,String>();
+> map.put("telphone","13810169999");
+> map.put("address","atguigu");
+> map.put("email","abc@163.com");
+> jedis.hmset("hash2",map);
+> List<String> result = jedis.hmget("hash2", "telphone","email");
+> for (String element : result) {
+> System.out.println(element);
+> }
+> ```
+>
+> ***zset***
+>
+> ```java
+> jedis.zadd("zset01", 100d, "z3");
+> jedis.zadd("zset01", 90d, "l4");
+> jedis.zadd("zset01", 80d, "w5");
+> jedis.zadd("zset01", 70d, "z6");
+> 
+> Set<String> zrange = jedis.zrange("zset01", 0, -1);
+> for (String e : zrange) {
+> System.out.println(e);
+> }
+> ```
+
+### *Jedis* 主从复制
+
+```java
+private static JedisSentinelPool jedisSentinelPool=null;
+
+public static  Jedis getJedisFromSentinel(){
+
+  if(jedisSentinelPool==null){
+    Set<String> sentinelSet=new HashSet<>();
+    sentinelSet.add("172.16.88.168:26379"); // 端口为sentinal
+    JedisPoolConfig jedisPoolConfig =new JedisPoolConfig();
+    jedisPoolConfig.setMaxTotal(10); // 最大可用连接数
+    jedisPoolConfig.setMaxIdle(5); // 最大闲置连接数
+    jedisPoolConfig.setMinIdle(5); // 最小闲置连接数
+    jedisPoolConfig.setBlockWhenExhausted(true); // 连接耗尽是否等待
+    jedisPoolConfig.setMaxWaitMillis(2000); // 等待时间
+    jedisPoolConfig.setTestOnBorrow(true); // 取连接的时候进行测试
+
+    jedisSentinelPool=new JedisSentinelPool("mymaster",sentinelSet,jedisPoolConfig); // 服务主机名
+    return jedisSentinelPool.getResource();
+  }
+  else {
+    return jedisSentinelPool.getResource();
+  }
+}
+Copy
+```
+
+### 集群的 *Jedis* 开发
+
+即使连接的不是主机，集群会自动切换主机存储。主机写，从机读。
+
+无中心化主从集群。无论从哪台主机写的数据，其他主机上都能读到数据。
+
+```java
+public class JedisClusterTest {
+  public static void main(String[] args) { 
+     Set<HostAndPort>set =new HashSet<HostAndPort>();
+     set.add(new HostAndPort("172.16.88.168",6379)); // 任何一个端口
+     JedisCluster jedisCluster = new JedisCluster(set);
+     jedisCluster.set("k1", "v1");
+     System.out.println(jedisCluster.get("k1"));
+  }
+}
+```
+
+## 11 SpringBoot整合Redis
+
+1. 依赖
+
+```xml
+<!-- redis -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+
+<!-- spring2.X集成redis所需common-pool2-->
+<dependency>
+  <groupId>org.apache.commons</groupId>
+  <artifactId>commons-pool2</artifactId>
+  <version>2.6.0</version>
+</dependency>
+Copy
+```
+
+1. 配置文件配置 ***Redis***
+
+```properties
+#Redis服务器地址
+spring.redis.host= ip
+#Redis服务器连接端口
+spring.redis.port=6379
+#Redis数据库索引（默认为0）
+spring.redis.database= 0
+#连接超时时间（毫秒）
+spring.redis.timeout=1800000
+#连接池最大连接数（使用负值表示没有限制）
+spring.redis.lettuce.pool.max-active=20
+#最大阻塞等待时间(负数表示没限制)
+spring.redis.lettuce.pool.max-wait=-1
+#连接池中的最大空闲连接
+spring.redis.lettuce.pool.max-idle=5
+#连接池中的最小空闲连接
+spring.redis.lettuce.pool.min-idle=0
+```
+
+1. ***Redis*** 配置类（需要继承 ***CachingConfigurerSupport***）
+
+```java
+@EnableCaching
+@Configuration
+public class RedisConfig extends CachingConfigurerSupport {
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+        ObjectMapper om = new ObjectMapper();
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        jackson2JsonRedisSerializer.setObjectMapper(om);
+        template.setConnectionFactory(factory);
+				// key序列化方式
+        template.setKeySerializer(redisSerializer);
+				// value序列化
+        template.setValueSerializer(jackson2JsonRedisSerializer);
+				// value hashmap序列化
+        template.setHashValueSerializer(jackson2JsonRedisSerializer);
+        return template;
+    }
+
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory factory) {
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
+        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+				// 解决查询缓存转换异常的问题
+        ObjectMapper om = new ObjectMapper();
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+        jackson2JsonRedisSerializer.setObjectMapper(om);
+				// 配置序列化（解决乱码的问题）,过期时间600秒
+        RedisCacheConfiguration config = 
+          RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofSeconds(600))
+      .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
+                .disableCachingNullValues();
+        RedisCacheManager cacheManager = RedisCacheManager.builder(factory)
+                .cacheDefaults(config)
+                .build();
+        return cacheManager;
+    }
+}
+Copy
+```
+
+
+
+##  12 Redsi6.0新功能 
 
 - ACL
 
