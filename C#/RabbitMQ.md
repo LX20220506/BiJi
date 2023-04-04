@@ -257,7 +257,7 @@ channel.BasicConsume(queue: "task_queue", autoAck: false, consumer: consumer);
 
 当RabbitMQ退出或崩溃的时候会忘记掉所有的队列，除非你告诉他不要这么做。如果想要确保消息不会丢失，我们需要做两件事，将队列和消息都标示成持久化。
 
-首先，我们需要确保RabbitMQ永远不会将队列丢失。为了达到此目的，我们需要使用*durable*来将其持久化。
+首先，我们需要确保RabbitMQ永远不会将队列丢失。为了达到此目的，我们需要使用*`durable`*来将其持久化。
 
 ```csharp
 channel.QueueDeclare(queue: "hello",
@@ -674,6 +674,7 @@ namespace Consumer1
             consumer.Received += (model, ea) =>
             {
                 Console.WriteLine($"小米天气：{Encoding.UTF8.GetString(ea.Body)}");
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             Console.WriteLine("准备接收消息");
@@ -726,6 +727,7 @@ namespace Consumer2
             consumer.Received += (model, ea) =>
             {
                 Console.WriteLine($"百度天气：{Encoding.UTF8.GetString(ea.Body)}");
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             Console.WriteLine("准备接收消息");
@@ -884,6 +886,7 @@ namespace Consumer1
             consumer.Received += (model, ea) =>
             {
                 Console.WriteLine(Encoding.UTF8.GetString(ea.Body));
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             // 发送消息
@@ -935,6 +938,7 @@ namespace Consumer2
             // 添加触发事件
             consumer.Received += (model, ea) => {
                 Console.WriteLine(Encoding.UTF8.GetString(ea.Body));
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             // 接受消息
@@ -1076,6 +1080,7 @@ namespace Consumer1
             // 添加回调函数，打印消息
             consumer.Received += (model, ea) => {
                 Console.WriteLine(Encoding.UTF8.GetString(ea.Body));
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             // 接受消息
@@ -1121,6 +1126,7 @@ namespace Consumer2
             // 添加回调函数
             consumer.Received += (model, ea) => {
                 Console.WriteLine(Encoding.UTF8.GetString(ea.Body));
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);// 进行消息确认
             };
 
             // 接受消息

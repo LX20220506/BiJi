@@ -1143,7 +1143,7 @@ update 表 set 字段=XXX where 主键=YYY and 版本=SSS
 
 #### （4）系统存储过程
 
-```
+```sql
 exec sp_databases; --查看数据库
 exec sp_tables; --查看表
 exec sp_columns student;--查看列

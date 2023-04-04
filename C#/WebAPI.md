@@ -35,11 +35,295 @@
 - app.Environment.EnvironmentName：读取环境变量中的配置
 - app.Environment.IsDevelopment()：在开发环境下，读取的配置；例如在开发环境下才会运行UseSwaggerUI界面
 
+- ~~~C#
+  //json
+  "Startup": {
+      "Cors": {
+        "AllowOrigins": "http://localhost:8080,http://localhost:8081"
+      }
+    }
+  
+  
+  //c#  读取配置
+  configuration.GetSection("Startup:Cors:AllowOrigins").Value
+  ~~~
+
+
+
 ### 防止机密配置外泄
 
 - 把不方便放到appsettings.json中的机密信息放到一个不在项目中的json文件中。
 - 在ASP.NET Core项目上单击鼠标右键，选择【管理用户机密】；该文件存在本地的C盘下
 - csproj文件中的<UserSecretsId>表示所在的文件夹名称
+
+### 映射为配置类
+
+~~~json
+// 配置RabbitMQ
+  "RabbitMQ": {
+    "UserName": "guest", // 登录名称
+    "Password": "guest", // 密码
+    "HostName": "localhost", // RabbitMQ地址
+    "Prot": "5672", //  端口号 
+    "VirtualHost": "My_VirtualHost" //  虚拟机名称
+  },
+~~~
+
+~~~C#
+// 读取配置
+var reabbitMqConfig = configuration.GetSection("RabbitMQ");
+// 映射为配置类
+RabbitMqOptions mqOptions=reabbitMqConfig.Get<RabbitMqOptions>();
+services.AddSingleton(new RabbitMqConnection(mqOptions));
+~~~
+
+### Option(选项组件)
+
+#### 说明
+
+组件定义自己专属的配置对象，也可以叫作选项类，这种设计模式称为选项模式。
+
+使用选项模式可以得到如下好处：
+
+- 符合接口分离原则(ISP)、封装原则，服务、组件仅依赖其用到的配置，而不是整个配置，如IConfiguration对象，它代表了整个应用加载的所有配置，在类中依赖它意味着依赖了整个配置，不符合封装原则。
+
+- 符合关注点分离原则，为服务、组件分别定义选项类，它们之间不相互依赖，确保了组件的独立性。
+
+
+选项组件主要包含在下列组件包(ASP.NET Core框架已经默认包含了它们)中：
+
+~~~
+Microsoft.Extensions.Options
+Microsoft.Extensions.Options.ConfigurationExtensions
+Microsoft.Extensions.Options.DataAnnotations
+~~~
+
+#### 选项的注入与使用
+
+选项框架提供了一组Configure<TOptions>扩展方法来注入选项类，可以将配置段Section传入并与其绑定，其中选项类满足下面的条件：
+
+- 必须是非抽象类。
+
+- 必须包含无参数的Public的构造函数。
+- 默认绑定所有Public设置了Get、Set属性，可以通过设置支持Private的Set属性。
+- 不会绑定字段。
+
+#### 使用实例
+
+先定义一个存储Option的自定义类型
+
+~~~C#
+public class MyOption
+{
+    public string Name { get; set; }
+    public int MinAge { get; set; }
+    public string Title { get; set; }
+}
+~~~
+
+通过扩展方法Configure 注入MyOption服务：
+
+```C#
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+    
+    public IConfiguration Configuration { get; }
+    
+    public void ConfigureServices(IServiceCollection services)
+    {
+        //注入MyOption选项类
+        services.Configure<MyOption>(Configuration.GetSection("myOption"));
+        //或者使用下面的代码
+
+        //注入并设置允许绑定私有属性
+        services.Configure<MyOption>(Configuration.GetSection("myOption"), binder =>
+                                     {
+                                         binder.BindNonPublicProperties = true;
+                                     });
+
+        services.AddControllersWithViews();
+    }
+    
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        //…
+    }
+}
+```
+
+在Service和Controller中使用Option：
+
+~~~C#
+public class MyService
+{
+    IOptions<MyOption> _options;
+    public MyService(IOptions<MyOption> options)
+    {
+        _options = options;
+    }
+    //其他代码
+}
+~~~
+
+
+
+### 支持注入的IOptions类型
+
+实际上选项框架提供了多个Options接口供选择：
+
+#### `IOptions<out TOptions>：`
+
+它的生命周期为单例模式，可以注入任意生命周期的服务中。
+
+不支持配置变更跟踪。不支持命名选项。
+
+适用场景：仅初始化时一次读取，不关心配置变化的服务。
+
+#### `IOptionsSnapshot<TOptions>`
+
+它的生命周期为Scope模式，可以注入生命周期为Scope的服务中。
+
+每个Scope都会重新计算选项值，因此可以读到最新的配置值。
+
+支持命名选项。
+
+适用场景：生命周期为Scope且期望在配置变更后使用新值的服务。
+
+#### `IOptionsMonitor<TOptions>` （推荐）
+
+它的生命周期为单例，可以注入任意生命周期的服务中。
+
+它提供了配置变更通知的能力。
+
+支持命名选项。
+
+适用场景：生命周期为单例，并且关心配置变更的服务。
+
+实例：使用IOptionsMonitor类型进行注入
+
+~~~C#
+public class MyService2
+{
+    IOptionsMonitor<MyOption> _options;
+    public MyService2(IOptionsMonitor<MyOption> options)
+    {
+        _options = options;
+        _options.OnChange(option =>
+                          {
+                              Console.WriteLine("配置变化了");
+                          });
+    }
+}
+~~~
+
+#### 三种接口对比测试
+
+`IOptions<TOptions>`就不说了，主要说一下`IOptionsSnapshot<TOptions>`和`IOptionsMonitor<TOptions>`的不同：
+
+- `IOptionsSnapshot<TOptions>` 注册为`Scoped`，在创建其实例时，会从配置中读取最新选项值作为快照，并在作用域中使用该快照
+- `IOptionsMonitor<TOptions>` 注册为 `Singleton`，每次调用实例的 `CurrentValue`时，会先检查缓存（`IOptionsMonitorCache<TOptions>`）是否有值，如果有值，则直接用，如果没有，则从配置中读取最新选项值，并记入缓存。当配置发生更改时，会将缓存清空。
+
+### 相同命名问题处理
+
+当我们需要在应用中对同一选项类的不同实例配置不同的值时，可以使用命名选项。在使用Configure<TOptions>时传入name参数，为不同的配置实例指定名称，同时注入各自的配置段，例如使用下面的配置文件：
+
+~~~C#
+//默认配置使用Section myOption
+services.Configure<MyOption>(Configuration.GetSection("myOption"));
+//名称为myOption2的配置使用Section myOption2
+services.Configure<MyOption>("myOption2", Configuration.GetSection("myOption2"));
+~~~
+
+通过OptionsMonitor<TOptions>的Get方法来读取命名选项类实例：
+
+```C#
+public class MyService2
+{
+    IOptionsMonitor<MyOption> _options;
+    public MyService2(IOptionsMonitor<MyOption> options)
+    {
+        _options = options;
+	//默认配置
+    var option = _options.CurrentValue;
+ 
+    //读取命名配置
+    var namedOption = _options.Get("myOption2");
+ 
+    _options.OnChange(option =>
+                      {
+                          Console.WriteLine("配置变化了");
+                      });
+	}
+}
+```
+### 验证选项
+
+在需要对选项类值的有效性进行验证的情况下，可以借助选项框架的验证功能来实现选项值的验证。
+
+注入验证逻辑有3种方式：
+
+通过DataAnnotations。
+通过验证委托。
+通过实现IValidateOptions接口。
+
+~~~C#
+public class Startup
+{
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+    
+    public IConfiguration Configuration { get; }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddOptions<MyOption>()
+            .Bind(Configuration.GetSection("myOption"))
+            .ValidateDataAnnotations()  //启用DataAnnotations验证
+            .Validate(option =>        //启用委托验证
+                      {
+                          return option.MinAge >= 0;
+                      }, "MinAge不能小于0");
+
+        //启用IValidateOptions验证
+        services.AddSingleton<IValidateOptions<MyOption>, MyOptionValidation>();  
+            //其他代码
+    }
+    
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        //…
+    }
+}
+~~~
+
+
+注意：要使DataAnnotations方式生效，则需要为选项类添加验证注解。
+
+使用IValidateOptions<MyOption>验证方式，MyOptionValidation.cs的实现参考：
+
+~~~C#
+public class MyOptionValidation : IValidateOptions<MyOption>
+{
+    public ValidateOptionsResult Validate(string name, MyOption options)
+    {
+        if (options.MinAge < 0)
+        {
+            return ValidateOptionsResult.Fail("MinAge不能小于0");
+        }
+        return ValidateOptionsResult.Success;
+    }
+}
+~~~
+
+
+
+
 
 ## 过滤器
 
@@ -60,6 +344,8 @@ ASP.NET Core中的Filter的五种类型：
 ### Exception Filter
 
 主要用于处理应用的异常信息
+
+示例1：
 
 ~~~C#
 // 创建ExceptionFilter
@@ -105,6 +391,127 @@ ASP.NET Core中的Filter的五种类型：
     });
 #endregion
 ~~~
+
+
+
+
+
+示例2：
+
+~~~C#
+/// <summary>
+/// api异常处理器
+/// </summary>
+public class ApiExceptionFilter : IExceptionFilter
+{
+
+    private readonly ILogger<ApiExceptionFilter> _logger;
+
+    public ApiExceptionFilter(ILogger<ApiExceptionFilter> logger)
+    {
+        _logger = logger;
+    }
+
+
+    // 发生异常时触发
+    public void OnException(ExceptionContext context)
+    {
+        string methodInfo = $"{context.RouteData.Values["controller"] as string}Controller.{context.RouteData.Values["action"] as string}:{context.HttpContext.Request.Method}";
+
+        // 如果不是AopHandledException异常，则可能没有记录过日志，进行日志记录
+        if (!(context.Exception is AopHandledException)) // AopHandledException是自定义异常处理器
+        {
+            _logger.LogError(context.Exception,methodInfo);
+        }
+
+        // 返回结果
+        context.Result = new JsonResult(new { 
+            status=501,
+            data="服务器出错"
+        });
+    }
+}
+~~~
+
+~~~C#
+// 添加全局过滤器
+services.AddControllers(options => {
+    //options.Filters.Add<ApiResultFilter>();
+    options.Filters.Add<ApiExceptionFilter>();
+});
+~~~
+
+
+
+### Result Filter
+
+可以统一返回格式
+
+~~~c#
+/// <summary>
+/// 给api返回结果包一层状态码
+/// </summary>
+public class ApiResultFilter : IResultFilter
+{
+    void IResultFilter.OnResultExecuted(ResultExecutedContext context)
+    {
+
+    }
+
+    void IResultFilter.OnResultExecuting(ResultExecutingContext context)
+    {
+        if (context.Result != null)
+        {
+            if (context.Result is ObjectResult objectResult)
+            {
+                if (objectResult.DeclaredType is null) //返回的是IActionResult类型
+                {
+                    context.Result = new JsonResult(new
+                                                    {
+                                                        status = objectResult.StatusCode,
+                                                        data = objectResult.Value
+                                                    });
+                }
+                else // 返回的是string、list这种其他类型，此时没有statusCode，应尽量使用IActionResult类型
+                {
+                    context.Result = new JsonResult(new
+                                                    {
+                                                        status = 200,
+                                                        data = objectResult.Value
+                                                    });
+                }
+            }
+            else if (context.Result is EmptyResult) // 返回值是空 结果
+            {
+                context.Result = new JsonResult(new {
+                    status=200,
+                    data=""
+                });
+            }
+            else
+            {
+                throw new Exception($"未经处理的Result类型：{context.Result.GetType().Name}");
+            }
+        }
+    }
+}
+~~~
+
+应用:
+
+~~~C#
+// 添加全局过滤器
+services.AddControllers(options => {
+    options.Filters.Add<ApiResultFilter>();
+    options.Filters.Add<ApiExceptionFilter>();
+});
+~~~
+
+
+
+
+
+
 
 ### Action Filter
 
@@ -300,6 +707,12 @@ namespace User.WebApi
     }
 }
 ~~~
+
+
+
+
+
+
 
 ## 中间件
 
